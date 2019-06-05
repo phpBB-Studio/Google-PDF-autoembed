@@ -1,0 +1,19 @@
+{% if _file.S_PDF %}
+	{# Include - CSS #}
+	{% if not definition.INCLUDED_PDFCSS %}
+		{% INCLUDECSS '@phpbbstudio_pdf/pdf.css' %}
+		{% DEFINE INCLUDED_PDFCSS = true %}
+	{% endif %}
+
+	<div class="pdf_iframe">
+		<iframe src="https://docs.google.com/gview?url={{ _file.SRC }}&embedded=true" width="100%" height="500"></iframe>
+	</div>
+{% elseif not _file.S_PDF and _file.S_PDF_DESC %}
+	<dl class="file">
+		<dt>{% if _file.UPLOAD_ICON %}{{ _file.UPLOAD_ICON }} {% endif %}<!--suppress HtmlUnknownTarget -->
+			<a class="postlink" href="{{ _file.U_DOWNLOAD_LINK }}">{{ _file.DOWNLOAD_NAME }}</a>
+		</dt>
+		{% if _file.COMMENT %}<dd><em>{{ _file.COMMENT }}</em></dd>{% endif %}
+		<dd>{{ lang('PDF_ERROR_FILE_SYSTEM') }}</dd>
+	</dl>
+{% endif %}
