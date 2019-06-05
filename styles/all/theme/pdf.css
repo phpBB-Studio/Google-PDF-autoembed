@@ -1,0 +1,26 @@
+/**
+ *
+ * phpBB Studio - Google PDF autoembed. An extension for the phpBB Forum Software package.
+ *
+ * @copyright (c) 2019, phpBB Studio, https://www.phpbbstudio.com
+ * @license GNU General Public License, version 2 (GPL-2.0)
+ *
+ */
+
+.pdf_iframe {
+	position: relative;
+	height: 0;
+	padding-top: 25px;
+
+	/* noinspection Stylelint */
+	padding-bottom: 56.25%; /* 16:9 */
+}
+
+.pdf_iframe iframe {
+	border: 0;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}

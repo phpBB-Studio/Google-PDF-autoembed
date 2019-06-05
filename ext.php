@@ -1,4 +1,6 @@
 <?php
+/** @noinspection PhpUndefinedMethodInspection */
+
 /**
  *
  * phpBB Studio - Google PDF autoembed. An extension for the phpBB Forum Software package.
@@ -9,6 +11,8 @@
  */
 
 namespace phpbbstudio\pdf;
+
+/** @noinspection PhpUndefinedNamespaceInspection */
 
 /**
  * phpBB Studio - Google PDF autoembed Extension base

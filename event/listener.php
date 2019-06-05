@@ -1,4 +1,7 @@
 <?php
+/** @noinspection PhpUndefinedNamespaceInspection */
+/** @noinspection PhpUndefinedFunctionInspection */
+
 /**
  *
  * phpBB Studio - Google PDF autoembed. An extension for the phpBB Forum Software package.
@@ -63,6 +66,7 @@ class listener implements EventSubscriberInterface
 	 */
 	public function pdf_setup_lang()
 	{
+		/** @noinspection PhpUndefinedMethodInspection */
 		$this->language->add_lang('pdf_common', 'phpbbstudio/pdf');
 	}
 
@@ -128,6 +132,16 @@ class listener implements EventSubscriberInterface
 		if (!is_writable($copy_path))
 		{
 			@chmod($copy_path, 0777);
+		}
+
+		$pdf_index = $this->root_path . 'ext/phpbbstudio/pdf/docs/index.html';
+
+		if (@file_exists($pdf_index))
+		{
+			@copy(
+				$pdf_index,
+				$copy_path . '/index.html'
+			);
 		}
 	}
 }

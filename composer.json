@@ -3,8 +3,8 @@
 	"type": "phpbb-extension",
 	"description": "Google PDF autoembed",
 	"homepage": "https://www.phpbbstudio.com",
-	"version": "1.0.0-beta",
-	"time": "2019-06-02",
+	"version": "1.0.1-beta",
+	"time": "2019-06-05",
 	"license": "GPL-2.0-only",
 	"authors": [
 		{
