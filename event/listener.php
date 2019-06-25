@@ -1,7 +1,4 @@
 <?php
-/** @noinspection PhpUndefinedNamespaceInspection */
-/** @noinspection PhpUndefinedFunctionInspection */
-
 /**
  *
  * phpBB Studio - Google PDF autoembed. An extension for the phpBB Forum Software package.
@@ -13,33 +10,46 @@
 
 namespace phpbbstudio\pdf\event;
 
-/**
- * @ignore
- */
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
- * Listener.
+ * phpBB Studio - Google PDF autoembed Listener.
  */
 class listener implements EventSubscriberInterface
 {
+	/** @var \phpbb\db\driver\driver_interface */
+	protected $db;
+
 	/* @var \phpbb\language\language */
 	protected $language;
+
+	/** @var string phpBB attachments table */
+	protected $attachments_table;
+
 	/* @var string phpBB root path */
 	protected $root_path;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param  \phpbb\language\language		$language		Language object
-	 * @param  string						$root_path		phpBB root path
+	 * @param  \phpbb\db\driver\driver_interface	$db					Database object
+	 * @param  \phpbb\language\language				$language			Language object
+	 * @param  string								$attachments_table	phpBB attachments table
+	 * @param  string								$root_path			phpBB root path
 	 * @return void
 	 * @access public
 	 */
-	public function __construct(\phpbb\language\language $language, $root_path)
+	public function __construct(
+		\phpbb\db\driver\driver_interface $db,
+		\phpbb\language\language $language,
+		$attachments_table,
+		$root_path)
 	{
-		$this->language		= $language;
-		$this->root_path	= $root_path;
+		$this->db					= $db;
+		$this->language				= $language;
+
+		$this->attachments_table	= $attachments_table;
+		$this->root_path			= $root_path;
 	}
 
 	/**
@@ -54,6 +64,7 @@ class listener implements EventSubscriberInterface
 		return [
 			'core.user_setup_after'							=> 'pdf_setup_lang',
 			'core.parse_attachments_modify_template_data'	=> 'pdf_parse_attachment',
+			'core.delete_attachments_collect_data_before'	=> 'pdf_delete_attachment',
 		];
 	}
 
@@ -66,32 +77,32 @@ class listener implements EventSubscriberInterface
 	 */
 	public function pdf_setup_lang()
 	{
-		/** @noinspection PhpUndefinedMethodInspection */
 		$this->language->add_lang('pdf_common', 'phpbbstudio/pdf');
 	}
 
 	/**
-	 * Parse PDF attachment to be Google's readable
+	 * Parse PDF attachment to be Google readable.
 	 * Creates a copy on purpose.
-	 * 
+	 *
 	 * @event  core.parse_attachments_modify_template_data
-	 * @param \phpbb\event\data		$event
+	 * @param  \phpbb\event\data		$event		The event object
 	 * @return void
 	 * @access public
 	 */
 	public function pdf_parse_attachment($event)
 	{
-		$s_pdf_desc = false;
-
 		if (@ini_get('allow_url_fopen'))
 		{
 			if ($event['attachment']['extension'] === 'pdf')
 			{
-				$copy_path = $this->root_path . 'images/pdf';
-				$dest_file = $copy_path . '/' . utf8_basename($event['attachment']['real_filename']);
-				$pdf_is_copy = (bool) @file_exists($dest_file);
+				$pdf_owner = (int) $event['attachment']['poster_id'];
 
-				if (!$pdf_is_copy)
+				$copy_path	= $this->root_path . 'images/pdf/' . $pdf_owner;
+				$dest_file	= $copy_path . '/' . utf8_basename($event['attachment']['real_filename']);
+				$s_pdf_copy	= (bool) @file_exists($dest_file);
+				$s_pdf_desc	= false;
+
+				if (!$s_pdf_copy)
 				{
 					$this->make_pdf_dir($copy_path);
 
@@ -105,20 +116,40 @@ class listener implements EventSubscriberInterface
 					}
 				}
 
+				$u_pdf_url = generate_board_url() . '/images/pdf/' . $pdf_owner . '/' . utf8_basename($event['attachment']['real_filename']);
+
 				$event['block_array'] = array_merge($event['block_array'], [
 					'S_FILE'		=> false,
 					'S_PDF_DESC'	=> (bool) $s_pdf_desc,
-					'S_PDF'			=> $pdf_is_copy,
-					'SRC'			=> generate_board_url() . '/images/pdf/' . utf8_basename($event['attachment']['real_filename']),
+					'S_PDF'			=> true,
+					'SRC'			=> $u_pdf_url,
 				]);
 			}
 		}
 	}
 
 	/**
-	 * Create destination dir if doesn't exist
+	 * Delete any files in the PDF directory, when the respective attachment is deleted.
 	 *
-	 * @param string	$copy_path		Path to dir
+	 * @event  core.delete_attachments_collect_data_before
+	 * @param  \phpbb\event\data		$event		The event object
+	 * @return void
+	 * @access public
+	 */
+	public function pdf_delete_attachment($event)
+	{
+		$data = $this->pdf_attachments($event['ids'], $event['sql_id']);
+
+		foreach ($data as $row)
+		{
+			$this->pdf_delete((int) $row['poster_id'], $row['real_filename']);
+		}
+	}
+
+	/**
+	 * Create destination dir if doesn't exist.
+	 *
+	 * @param  string	$copy_path		Path to directory
 	 * @return void
 	 * @access protected
 	 */
@@ -126,7 +157,7 @@ class listener implements EventSubscriberInterface
 	{
 		if (!is_dir($copy_path))
 		{
-			@mkdir($copy_path, 0777);
+			@mkdir($copy_path, 0777, true);
 		}
 
 		if (!is_writable($copy_path))
@@ -142,6 +173,54 @@ class listener implements EventSubscriberInterface
 				$pdf_index,
 				$copy_path . '/index.html'
 			);
+
+			@copy(
+				$pdf_index,
+				$this->root_path . 'images/pdf/index.html'
+			);
+		}
+	}
+
+	/**
+	 * Retrieve data for multiple attachments.
+	 *
+	 * @param  mixed	$ids		The attachment identifier
+	 * @param  string	$column		The identifier column
+	 * @return array
+	 * @access protected
+	 */
+	protected function pdf_attachments($ids, $column = 'attach_id')
+	{
+		$data = [];
+
+		$sql = 'SELECT attach_id, poster_id, physical_filename, real_filename
+				FROM ' . $this->attachments_table . '
+				WHERE ' . $this->db->sql_in_set($column, (array) $ids);
+		$result = $this->db->sql_query($sql);
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			$data[(int) $row['attach_id']] = $row;
+		}
+		$this->db->sql_freeresult($result);
+
+		return (array) $data;
+	}
+
+	/**
+	 * Deletes a file from the PDF directory.
+	 *
+	 * @param  int		$user_id		The poster's user identifier.
+	 * @param  string	$file_real		The attachment's real filename
+	 * @return void
+	 * @access protected
+	 */
+	protected function pdf_delete($user_id, $file_real)
+	{
+		$target = $this->root_path . '/images/pdf/' . $user_id . '/' . $file_real;
+
+		if (@file_exists($target))
+		{
+			@unlink($target);
 		}
 	}
 }

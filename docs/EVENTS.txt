@@ -2,7 +2,7 @@
  * Google PDF autoembed extension © Copyright phpBB Studio 2019
  * https://www.phpbbstudio.com
  *
- * Google PDF autoembed is free extension for the phpBB Forum Software Package.
+ * Google PDF autoembed is a free extension for the phpBB Forum Software Package.
  * You can redistribute it and/or modify it under the terms of
  * the GNU General Public License, version 2 (GPL-2.0) as
  * published by the Free Software Foundation.

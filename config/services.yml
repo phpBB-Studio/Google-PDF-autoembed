@@ -1,8 +1,10 @@
 services:
     phpbbstudio.pdf.listener:
-        class: \phpbbstudio\pdf\event\listener
+        class: phpbbstudio\pdf\event\listener
         arguments:
+            - '@dbal.conn'
             - '@language'
+            - '%tables.attachments%'
             - '%core.root_path%'
         tags:
             - { name: event.listener }
