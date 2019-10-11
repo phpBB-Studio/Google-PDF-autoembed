@@ -116,7 +116,7 @@ class listener implements EventSubscriberInterface
 					}
 				}
 
-				$u_pdf_url = generate_board_url() . '/images/pdf/' . $pdf_owner . '/' . utf8_basename($event['attachment']['real_filename']);
+				$u_pdf_url = generate_board_url() . '/images/pdf/' . $pdf_owner . '/' . utf8_basename(rawurlencode($event['attachment']['real_filename']));
 
 				$event['block_array'] = array_merge($event['block_array'], [
 					'S_FILE'		=> false,

@@ -1,3 +1,8 @@
+# phpBB Studio - Google PDF autoembed
+
+v1.0.3
+ - Fix - not rendering attachment containing filename with spaces or other chars
+
 v1.0.2
  - added custom local storage on a per user basis
  - fixed template logic
