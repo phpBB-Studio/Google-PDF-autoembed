@@ -91,14 +91,15 @@ class listener implements EventSubscriberInterface
 	 */
 	public function pdf_parse_attachment($event)
 	{
-		if (@ini_get('allow_url_fopen'))
+		/** We do not accept embedding previews to avoid create the mirror file in advance */
+		if (@ini_get('allow_url_fopen') && !$event['preview'])
 		{
 			if ($event['attachment']['extension'] === 'pdf')
 			{
 				$pdf_owner = (int) $event['attachment']['poster_id'];
 
 				$copy_path	= $this->root_path . 'images/pdf/' . $pdf_owner;
-				$dest_file	= $copy_path . '/' . utf8_basename($event['attachment']['real_filename']);
+				$dest_file	= $copy_path . '/' . utf8_basename($event['attachment']['physical_filename'] . '_' . $event['attachment']['real_filename']);
 				$s_pdf_copy	= (bool) @file_exists($dest_file);
 				$s_pdf_desc	= false;
 
@@ -116,13 +117,13 @@ class listener implements EventSubscriberInterface
 					}
 				}
 
-				$u_pdf_url = generate_board_url() . '/images/pdf/' . $pdf_owner . '/' . utf8_basename(rawurlencode($event['attachment']['real_filename']));
+				$u_pdf_url = generate_board_url() . '/images/pdf/' . $pdf_owner . '/' . utf8_basename(rawurlencode($event['attachment']['physical_filename'] . '_' . $event['attachment']['real_filename']));
 
 				$event['block_array'] = array_merge($event['block_array'], [
 					'S_FILE'		=> false,
 					'S_PDF_DESC'	=> (bool) $s_pdf_desc,
 					'S_PDF'			=> true,
-					'SRC'			=> $u_pdf_url,
+					'SRC'			=> (string) $u_pdf_url,
 				]);
 			}
 		}
@@ -142,7 +143,7 @@ class listener implements EventSubscriberInterface
 
 		foreach ($data as $row)
 		{
-			$this->pdf_delete((int) $row['poster_id'], $row['real_filename']);
+			$this->pdf_delete((int) $row['poster_id'], (string) $row['physical_filename'], (string) $row['real_filename']);
 		}
 	}
 
@@ -169,15 +170,21 @@ class listener implements EventSubscriberInterface
 
 		if (@file_exists($pdf_index))
 		{
-			@copy(
-				$pdf_index,
-				$copy_path . '/index.html'
-			);
+			if (!@file_exists($copy_path . '/index.html'))
+			{
+				@copy(
+					$pdf_index,
+					$copy_path . '/index.html'
+				);
+			}
 
-			@copy(
-				$pdf_index,
-				$this->root_path . 'images/pdf/index.html'
-			);
+			if (!@file_exists($this->root_path . 'images/pdf/index.html'))
+			{
+				@copy(
+					$pdf_index,
+					$this->root_path . 'images/pdf/index.html'
+				);
+			}
 		}
 	}
 
@@ -210,13 +217,14 @@ class listener implements EventSubscriberInterface
 	 * Deletes a file from the PDF directory.
 	 *
 	 * @param  int		$user_id		The poster's user identifier.
+	 * @param  string	$file_physical	The attachment's physical filename
 	 * @param  string	$file_real		The attachment's real filename
 	 * @return void
 	 * @access protected
 	 */
-	protected function pdf_delete($user_id, $file_real)
+	protected function pdf_delete($user_id, $file_physical, $file_real)
 	{
-		$target = $this->root_path . '/images/pdf/' . $user_id . '/' . $file_real;
+		$target = $this->root_path . '/images/pdf/' . $user_id . '/' . $file_physical . '_' . $file_real;
 
 		if (@file_exists($target))
 		{
