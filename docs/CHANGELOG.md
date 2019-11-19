@@ -2,6 +2,7 @@
 
 ### v1.1.0-beta on 18-11-2019
  - Fixed compatibilty with 3.3.x
+ - Version checker
  - Use unique file ID
  - Exclude mirror file creation on preview mode
  - Use ampersand in link
