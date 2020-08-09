@@ -7,13 +7,22 @@
  *
  */
 
-.pdf-iframe {
-	position: relative;
+ .holds-the-iframe {
+    background:url(/forum/images/loading.gif) center center no-repeat;
+    	position: relative;
 	height: 0;
-	padding-top: 25px;
+	padding-top: 4px;
 
 	/* noinspection Stylelint */
 	padding-bottom: 56.25%; /* 16:9 */
+}
+.pdf-iframe {
+	position: relative;
+	height: 0;
+	padding-top: 5px;
+
+	/* noinspection Stylelint */
+	padding-bottom: 16.25%; /* 16:9 */
 }
 
 .pdf-iframe iframe {
